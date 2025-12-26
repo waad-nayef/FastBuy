@@ -39,6 +39,10 @@ class Database
         $stmt->execute($params);
         return $stmt;
     }
+    public function countOf($tableName)
+    {
+        return $this->query("SELECT COUNT(*) AS 'total_$tableName' FROM $tableName")->fetch();
+    }
 
     // users
 
@@ -340,6 +344,16 @@ class Database
             [$status, $id]
         );
     }
+
+    public function totalPayments()
+    {
+        $sql = "SELECT COALESCE(SUM(amount), 0) AS total
+            FROM payments
+            WHERE status = 'paid'";
+
+        return $this->query($sql)->fetch();
+    }
+
 
     // cart
     public function createCart($user_id)
