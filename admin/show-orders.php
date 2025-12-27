@@ -62,6 +62,9 @@ $db = Database::getInstance();
         integrity="sha256-+uGLJmmTKOqBr+2E6KDYs/NRsHxSkONXFHUL0fy2O/4=" crossorigin="anonymous" />
 
     <script src="https://kit.fontawesome.com/8bb0a97d35.js" crossorigin="anonymous"></script>
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <!--end::Head-->
 <!--begin::Body-->
@@ -69,8 +72,8 @@ $db = Database::getInstance();
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
     <!--begin::App Wrapper-->
     <div class="app-wrapper">
-        <?php include "navbar.php";
-        include "sidebar.php";
+        <?php include "../admin-components/navbar.php";
+        include "../admin-components/sidebar.php";
         ?>
 
         <!--begin::App Main-->
@@ -116,6 +119,7 @@ $db = Database::getInstance();
                                 $lastName = $db->getUserById($order['user_id'])['last_name'];
                                 $totalPrice = $order['total_price'];
                                 $status = $order['status'];
+                                $userId = $order['user_id'];
                                 $date = $order['created_at'];
 
                                 echo '<tr class="align-middle">';
@@ -124,9 +128,25 @@ $db = Database::getInstance();
                                 echo "<td>$ $totalPrice</td>";
                                 echo "<td>$status</td>";
                                 echo "<td>$date</td>";
-                                echo "<td style='display: flex; gap:10px'><span class='badge text-bg-danger'>Delete</span>";
-                                echo "<span class='badge text-bg-info'>Info</span>";
-                                echo "<span class='badge text-bg-warning'>Edit</span></td>";
+                                echo "<td>";
+
+                                if ($status != 'cancelled' && $status != 'delivered') {
+                                    echo "
+                                                    <span class='badge text-bg-danger'
+                                                        onclick='confirmCancel($id,$userId)'
+                                                        style='cursor:pointer'>Cancel</span>
+                                                    &nbsp;&nbsp;";
+                                } else {
+                                    echo "
+                                                    <span class='badge text-bg-secondary'>Cancel</span>
+                                                    &nbsp;&nbsp;";
+                                }
+
+                                echo "
+                                                <span class='badge text-bg-warning'
+                                                    onclick='updateStatus($id,$userId)'
+                                                    style='cursor:pointer'>Update Status</span>
+                                                </td>";
                             }
                             ?>
                             </tr>
@@ -140,9 +160,61 @@ $db = Database::getInstance();
     </div>
     </main>
     <!--end::App Main-->
-    <?php include "footer.php"; ?>
+    <?php include "../admin-components/footer.php"; ?>
     </div>
     <!--end::App Wrapper-->
+
+    <script>
+        function confirmCancel(id, userId) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "This order will be cancelled",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, cancel order',
+                cancelButtonText: 'Close'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href =
+                        'actions/order/cancel-order.php?id=' + id +
+                        '&userid=' + userId;
+                }
+            });
+        }
+
+
+        function updateStatus(id) {
+            Swal.fire({
+                title: 'Update Order Status',
+                input: 'select',
+                inputOptions: {
+                    pending: 'Pending',
+                    approved: 'Approved',
+                    delivered: 'Delivered'
+                },
+                inputPlaceholder: 'Select a status',
+                showCancelButton: true,
+                confirmButtonText: 'Update',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#28a745',
+                inputValidator: (value) => {
+                    if (!value) {
+                        return 'You must choose a status';
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href =
+                        'actions/order/update-status.php' +
+                        '?id=' + id +
+                        '&status=' + result.value;
+
+                }
+            });
+        }
+    </script>
 </body>
 <!--end::Body-->
 

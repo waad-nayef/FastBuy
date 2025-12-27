@@ -93,9 +93,9 @@
             </div>
             <!--end::Row-->
             <!--begin::Row-->
-            <div class="row">
+            <div>
                 <!-- Start col -->
-                <div class="col-lg-7 connectedSortable">
+                <div class="col-lg-7 connectedSortable"  style="width: 100%;">
                     <div class="card mb-4">
                         <div class="card-header">
                             <h3 class="card-title">Sales Value</h3>

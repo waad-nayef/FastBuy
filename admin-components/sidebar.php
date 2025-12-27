@@ -24,17 +24,12 @@
                  aria-label="Main navigation" data-accordion="false" id="navigation">
 
                  <li class="nav-item">
-                     <a href="index.php" class="nav-link">
+                     <a href="../admin/index.php" class="nav-link">
                          <i class="nav-icon bi bi-speedometer"></i>
                          <p>Dashboard</p>
                      </a>
                  </li>
-                 <li class="nav-item">
-                     <a href="index.htm" class="nav-link">
-                         <i class="nav-icon fa-solid fa-chart-area"></i>
-                         <p>Charts</p>
-                     </a>
-                 </li>
+
                  <li class="nav-item">
                      <a href="index.html" class="nav-link">
                          <i class="nav-icon fa-solid fa-pen-to-square"></i>

@@ -62,15 +62,21 @@ $db = Database::getInstance();
         integrity="sha256-+uGLJmmTKOqBr+2E6KDYs/NRsHxSkONXFHUL0fy2O/4=" crossorigin="anonymous" />
 
     <script src="https://kit.fontawesome.com/8bb0a97d35.js" crossorigin="anonymous"></script>
+
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <!--end::Head-->
+
 <!--begin::Body-->
 
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
     <!--begin::App Wrapper-->
     <div class="app-wrapper">
-        <?php include "navbar.php";
-        include "sidebar.php";
+        <?php
+        include "../admin-components/navbar.php";
+        include "../admin-components/sidebar.php";
         ?>
 
         <!--begin::App Main-->
@@ -84,7 +90,7 @@ $db = Database::getInstance();
                         <div class="col-sm-6" style="width:100%">
                             <div style="display: flex; justify-content:space-between">
                                 <h3 class="mb-0">Products</h3>
-                                <button type="button" class="btn btn-success mb-2">+ Add</button>
+                                <button type="button" class="btn btn-success mb-2" onclick="window.location.href='actions/product/add-product.php'">+ Add</button>
                             </div>
                         </div>
                     </div>
@@ -124,9 +130,29 @@ $db = Database::getInstance();
                                 echo "<td>$category</td>";
                                 echo "<td>$ $price</td>";
                                 echo "<td>$stock</td>";
-                                echo "<td style='display: flex; gap:10px'><span class='badge text-bg-danger'>Delete</span>";
-                                echo "<span class='badge text-bg-info'>Info</span>";
-                                echo "<span class='badge text-bg-warning'>Edit</span></td>";
+                                echo "
+                                        <td>
+                                           <span class='badge text-bg-danger' 
+                                            onclick='confirmDelete($id, \"$name\")'
+                                            style='cursor:pointer'>
+                                            Delete
+                                        </span>
+                                            &nbsp;&nbsp;
+
+                                            <span class='badge text-bg-info' 
+                                                onclick=\"window.location.href='actions/product/product-details.php?id=$id'\"
+                                                style='cursor:pointer'>
+                                                Info
+                                            </span>
+                                            &nbsp;&nbsp;
+
+                                            <span class='badge text-bg-warning' 
+                                                onclick=\"window.location.href='actions/product/add-product.php?id=$id'\"
+                                                style='cursor:pointer'>
+                                                Edit
+                                            </span>
+                                        </td>
+                                        ";
                             }
                             ?>
                             </tr>
@@ -140,9 +166,56 @@ $db = Database::getInstance();
     </div>
     </main>
     <!--end::App Main-->
-    <?php include "footer.php"; ?>
+    <?php include "../admin-components/footer.php"; ?>
     </div>
     <!--end::App Wrapper-->
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('success') == '1') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: 'Product added successfully',
+                    confirmButtonColor: '#28a745',
+                    timer: 3000
+                }).then(() => {
+                    // Clean URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                });
+            }
+        });
+
+        function confirmDelete(id, productName) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: productName + " will be permanently deleted",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete it',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = 'actions/product/delete-product.php?id=' + id;
+                }
+            });
+        }
+
+        if (urlParams.get('updated') === '1') {
+            Swal.fire({
+                icon: 'success',
+                title: 'Updated',
+                text: 'Product updated successfully',
+                confirmButtonColor: '#28a745',
+                timer: 3000
+            }).then(() => {
+                window.history.replaceState({}, document.title, window.location.pathname);
+            });
+        }
+    </script>
 </body>
 <!--end::Body-->
 
