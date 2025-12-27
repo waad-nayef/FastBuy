@@ -40,8 +40,7 @@ class Database
         return $stmt;
     }
 
-    // users
-
+    // ------------------ Users ------------------
     public function getAllUsers()
     {
         return $this->query("SELECT * FROM users");
@@ -52,13 +51,12 @@ class Database
         return $this->query("SELECT * FROM users WHERE id = ?", [$id])->fetch();
     }
 
-     public function getUserByEmail($email) {
-    
-    $sql = "SELECT * FROM users WHERE email = ?";
-    $stmt = $this->conn->prepare($sql);
-    $stmt->execute([$email]);
-    return $stmt->fetch(); 
-}
+    public function getUserByEmail($email)
+    {
+        $stmt = $this->conn->prepare("SELECT * FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        return $stmt->fetch();
+    }
 
     public function createUser($first_name, $last_name, $email, $password, $role = 'user', $phone = null, $photo = null, $country = null, $city = null)
     {
@@ -85,7 +83,7 @@ class Database
         return $this->query("DELETE FROM users WHERE id = ?", [$id]);
     }
 
-    // products
+    // ------------------ Products ------------------
     public function getAllProducts()
     {
         return $this->query("SELECT * FROM products");
@@ -161,7 +159,7 @@ class Database
         return $this->query("DELETE FROM products WHERE id = ?", [$id]);
     }
 
-    // categories 
+    // ------------------ Categories ------------------
     public function getAllCategories()
     {
         return $this->query("SELECT * FROM categories");
@@ -194,7 +192,7 @@ class Database
         return $this->query("DELETE FROM categories WHERE id = ?", [$id]);
     }
 
-    // orders
+    // ------------------ Orders ------------------
     public function getAllOrders()
     {
         return $this->query("SELECT * FROM orders");
@@ -221,43 +219,28 @@ class Database
             }
 
             $total = 0;
-
             foreach ($cartItems as $item) {
                 $product = $this->getProductById($item['product_id']);
-
                 if (!$product || $product['stock'] < $item['quantity']) {
                     throw new Exception("no products available");
                 }
-
                 $total += ((float)$product['price']) * $item['quantity'];
             }
 
-            $this->query(
-                "INSERT INTO orders (user_id, total_price, status)
-             VALUES (?, ?, 'pending')",
-                [$user_id, $total]
-            );
-
+            $this->query("INSERT INTO orders (user_id, total_price, status) VALUES (?, ?, 'pending')", [$user_id, $total]);
             $order_id = $this->conn->lastInsertId();
 
             foreach ($cartItems as $item) {
                 $product = $this->getProductById($item['product_id']);
                 $itemTotal = ((float)$product['price']) * $item['quantity'];
 
-                $this->query(
-                    "INSERT INTO order_items (order_id, product_id, quantity, total_price)
-                 VALUES (?, ?, ?, ?)",
-                    [$order_id, $item['product_id'], $item['quantity'], $itemTotal]
-                );
+                $this->query("INSERT INTO order_items (order_id, product_id, quantity, total_price) VALUES (?, ?, ?, ?)",
+                    [$order_id, $item['product_id'], $item['quantity'], $itemTotal]);
 
-                $this->query(
-                    "UPDATE products SET stock = stock - ? WHERE id = ?",
-                    [$item['quantity'], $item['product_id']]
-                );
+                $this->query("UPDATE products SET stock = stock - ? WHERE id = ?", [$item['quantity'], $item['product_id']]);
             }
 
             $this->clearCart($cart_id);
-
             $this->conn->commit();
             return $order_id;
         } catch (Exception $e) {
@@ -275,48 +258,38 @@ class Database
         return $this->query("UPDATE orders SET status=? WHERE id = ?", [$status, $id]);
     }
 
-
     public function cancelOrder($order_id)
     {
         $order = $this->getOrderById($order_id);
-
         if (!$order || $order['status'] === 'delivered') {
             return false;
         }
 
         $items = $this->getOrderItems($order_id);
-
         foreach ($items as $item) {
-            $this->query(
-                "UPDATE products SET stock = stock + ? WHERE id = ?",
-                [$item['quantity'], $item['product_id']]
-            );
+            $this->query("UPDATE products SET stock = stock + ? WHERE id = ?", [$item['quantity'], $item['product_id']]);
         }
 
         return $this->updateOrder($order_id, 'cancelled');
     }
 
-
     public function getOrderItems($order_id)
     {
-        return $this->query(
-            "SELECT * FROM order_items WHERE order_id = ?",
-            [$order_id]
-        )->fetchAll();
+        return $this->query("SELECT * FROM order_items WHERE order_id = ?", [$order_id])->fetchAll();
     }
 
     public function getOrderWithItems($order_id)
     {
         return $this->query(
             "SELECT order_items.*, products.name, products.image 
-         FROM order_items order_items
-         JOIN products products ON order_items.product_id = products.id
-         WHERE order_items.order_id = ?",
+             FROM order_items 
+             JOIN products ON order_items.product_id = products.id
+             WHERE order_items.order_id = ?",
             [$order_id]
         )->fetchAll();
     }
 
-    //payments
+    // ------------------ Payments ------------------
     public function getAllPayments()
     {
         return $this->query("SELECT * FROM payments");
@@ -344,14 +317,13 @@ class Database
         );
     }
 
-    // cart
+    // ------------------ Cart ------------------
     public function createCart($user_id)
     {
         $stmt = $this->query("SELECT * FROM cart WHERE user_id = ?", [$user_id]);
         if ($stmt->rowCount() > 0) {
             return false;
         }
-
         $this->query("INSERT INTO cart (user_id) VALUES (?)", [$user_id]);
         return $this->conn->lastInsertId();
     }
@@ -363,51 +335,34 @@ class Database
 
     public function getCartItems($cart_id)
     {
-        $sql = "SELECT * FROM cart_items WHERE cart_id = ?";
-        $stmt = $this->query($sql, [$cart_id]);
-
-        return $stmt->fetchAll();
+        return $this->query("SELECT * FROM cart_items WHERE cart_id = ?", [$cart_id])->fetchAll();
     }
 
     public function clearCart($cart_id)
     {
-        return $this->query(
-            "DELETE FROM cart_items WHERE cart_id = ?",
-            [$cart_id]
-        );
+        return $this->query("DELETE FROM cart_items WHERE cart_id = ?", [$cart_id]);
     }
 
     public function addToCart($cart_id, $product_id, $quantity)
     {
-        $product = $this->query(
-            "SELECT * FROM products WHERE id = ?",
-            [$product_id]
-        )->fetch();
-
+        $product = $this->getProductById($product_id);
         if (!$product || $product['stock'] < $quantity) {
             return false;
         }
 
-        $existing = $this->query(
-            "SELECT * FROM cart_items WHERE cart_id = ? AND product_id = ?",
-            [$cart_id, $product_id]
-        )->fetch();
-
+        $existing = $this->query("SELECT * FROM cart_items WHERE cart_id = ? AND product_id = ?", [$cart_id, $product_id])->fetch();
         if ($existing) {
             $newQuantity = $existing['quantity'] + $quantity;
-
             if ($newQuantity > $product['stock']) {
                 return false;
             }
-
             return $this->updateCartItem($existing['id'], $newQuantity);
         }
 
         $total_price = ((float)$product['price']) * $quantity;
-
         return $this->query(
             "INSERT INTO cart_items (cart_id, product_id, quantity, total_price)
-         VALUES (?, ?, ?, ?)",
+             VALUES (?, ?, ?, ?)",
             [$cart_id, $product_id, $quantity, $total_price]
         );
     }
@@ -416,9 +371,9 @@ class Database
     {
         return $this->query(
             "SELECT cart_items.*, products.name, products.price, products.image, products.stock 
-         FROM cart_items cart_items
-         JOIN products products ON cart_items.product_id = products.id
-         WHERE cart_items.cart_id = ?",
+             FROM cart_items 
+             JOIN products ON cart_items.product_id = products.id
+             WHERE cart_items.cart_id = ?",
             [$cart_id]
         )->fetchAll();
     }
@@ -426,7 +381,6 @@ class Database
     public function updateCartItem($cartItemId, $quantity)
     {
         $cartItem = $this->query("SELECT * FROM cart_items WHERE id = ?", [$cartItemId])->fetch();
-
         if (!$cartItem) {
             return false;
         }
@@ -439,15 +393,12 @@ class Database
             return $this->removeFromCart($cartItemId);
         }
 
-        $stmt = $this->query("SELECT * FROM products WHERE id = ?", [$cartItem['product_id']]);
-        $product = $stmt->fetch();
-
+        $product = $this->getProductById($cartItem['product_id']);
         if (!$product) {
             return false;
         }
 
         $total_price = ((float)$product['price']) * $quantity;
-
         return $this->query(
             "UPDATE cart_items SET quantity = ?, total_price = ? WHERE id = ?",
             [$quantity, $total_price, $cartItemId]
@@ -456,10 +407,7 @@ class Database
 
     public function getCartTotal($cart_id)
     {
-        return $this->query(
-            "SELECT SUM(total_price) AS total FROM cart_items WHERE cart_id = ?",
-            [$cart_id]
-        )->fetch()['total'];
+        return $this->query("SELECT SUM(total_price) AS total FROM cart_items WHERE cart_id = ?", [$cart_id])->fetch()['total'];
     }
 
     public function removeFromCart($cartItemId)
@@ -467,128 +415,90 @@ class Database
         return $this->query("DELETE FROM cart_items WHERE id = ?", [$cartItemId]);
     }
 
-    // wishlist
+    // ------------------ Wishlist ------------------
     public function createWishlist($user_id)
     {
-        $stmt = $this->query(
-            "SELECT * FROM wishlist WHERE user_id = ?",
-            [$user_id]
-        );
-
+        $stmt = $this->query("SELECT * FROM wishlist WHERE user_id = ?", [$user_id]);
         if ($stmt->rowCount() > 0) {
             return false;
         }
-
-        return $this->query(
-            "INSERT INTO wishlist (user_id) VALUES (?)",
-            [$user_id]
-        );
+        return $this->query("INSERT INTO wishlist (user_id) VALUES (?)", [$user_id]);
     }
 
     public function getWishlistByUserId($user_id)
     {
-        return $this->query(
-            "SELECT * FROM wishlist WHERE user_id = ?",
-            [$user_id]
-        )->fetch();
+        return $this->query("SELECT * FROM wishlist WHERE user_id = ?", [$user_id])->fetch();
     }
 
     public function deleteWishlist($wishlist_id)
     {
-        return $this->query(
-            "DELETE FROM wishlist WHERE id = ?",
-            [$wishlist_id]
-        );
+        return $this->query("DELETE FROM wishlist WHERE id = ?", [$wishlist_id]);
     }
 
     public function addWishlistItem($wishlist_id, $product_id)
     {
-        $stmt = $this->query(
-            "SELECT * FROM wishlist_items WHERE wishlist_id = ? AND product_id = ?",
-            [$wishlist_id, $product_id]
-        );
-
+        $stmt = $this->query("SELECT * FROM wishlist_items WHERE wishlist_id = ? AND product_id = ?", [$wishlist_id, $product_id]);
         if ($stmt->rowCount() > 0) {
             return false;
         }
-
-        return $this->query(
-            "INSERT INTO wishlist_items (wishlist_id, product_id)
-         VALUES (?, ?)",
-            [$wishlist_id, $product_id]
-        );
+        return $this->query("INSERT INTO wishlist_items (wishlist_id, product_id) VALUES (?, ?)", [$wishlist_id, $product_id]);
     }
 
     public function getWishlistItems($wishlist_id)
     {
-        return $this->query(
-            "SELECT * FROM wishlist_items WHERE wishlist_id = ?",
-            [$wishlist_id]
-        )->fetchAll();
+        return $this->query("SELECT * FROM wishlist_items WHERE wishlist_id = ?", [$wishlist_id])->fetchAll();
     }
 
     public function removeFromWishlist($wishlist_id, $product_id)
     {
-        return $this->query(
-            "DELETE FROM wishlist_items WHERE wishlist_id = ? AND product_id = ?",
-            [$wishlist_id, $product_id]
-        );
-    }
-
-    // reviews
-    public function addReview($user_id, $product_id, $rating, $comment = null)
-    {
-        return $this->query(
-            "INSERT INTO reviews (user_id, product_id, rating, comment)
-         VALUES (?, ?, ?, ?)",
-            [$user_id, $product_id, $rating, $comment]
-        );
-    }
-
-    public function getProductReviews($product_id)
-    {
-        return $this->query(
-            "SELECT * FROM reviews WHERE product_id = ?",
-            [$product_id]
-        )->fetchAll();
-    }
-
-    public function getUserReviews($user_id)
-    {
-        return $this->query(
-            "SELECT * FROM reviews WHERE user_id = ?",
-            [$user_id]
-        )->fetchAll();
-    }
-
-    public function deleteReview($review_id)
-    {
-        return $this->query(
-            "DELETE FROM reviews WHERE id = ?",
-            [$review_id]
-        );
-    }
-
-    public function getProductReviewsWithUsers($product_id)
-    {
-        return $this->query(
-            "SELECT reviews.*, users.first_name, users.last_name, users.photo 
-         FROM reviews reviews
-         JOIN users users ON reviews.user_id = users.id
-         WHERE reviews.product_id = ?
-         ORDER BY reviews.created_at DESC",
-            [$product_id]
-        )->fetchAll();
+        return $this->query("DELETE FROM wishlist_items WHERE wishlist_id = ? AND product_id = ?", [$wishlist_id, $product_id]);
     }
 
     public function getWishlistItemsWithDetails($wishlist_id)
     {
         return $this->query(
             "SELECT wishlist_items.*, products.name, products.price, products.image, products.stock 
-         FROM wishlist_items wishlist_items
-         JOIN products products ON wishlist_items.product_id = products.id
-         WHERE wishlist_items.wishlist_id = ?",
+             FROM wishlist_items 
+             JOIN products ON wishlist_items.product_id = products.id
+             WHERE wishlist_items.wishlist_id = ?",
             [$wishlist_id]
+        )->fetchAll();
+    }
+
+    // ------------------ Reviews ------------------
+    public function addReview($user_id, $product_id, $rating, $comment = null)
+    {
+        return $this->query(
+            "INSERT INTO reviews (user_id, product_id, rating, comment)
+             VALUES (?, ?, ?, ?)",
+            [$user_id, $product_id, $rating, $comment]
+        );
+    }
+
+    public function getProductReviews($product_id)
+    {
+        return $this->query("SELECT * FROM reviews WHERE product_id = ?", [$product_id])->fetchAll();
+    }
+
+    public function getUserReviews($user_id)
+    {
+        return $this->query("SELECT * FROM reviews WHERE user_id = ?", [$user_id])->fetchAll();
+    }
+
+    public function deleteReview($review_id)
+    {
+        return $this->query("DELETE FROM reviews WHERE id = ?", [$review_id]);
+    }
+
+    public function getProductReviewsWithUsers($product_id)
+    {
+        return $this->query(
+            "SELECT reviews.*, users.first_name, users.last_name, users.photo 
+             FROM reviews 
+             JOIN users ON reviews.user_id = users.id
+             WHERE reviews.product_id = ?
+             ORDER BY reviews.created_at DESC",
+            [$product_id]
         )->fetchAll();
     }
 
@@ -596,23 +506,15 @@ class Database
     {
         return $this->query(
             "SELECT AVG(rating) as avg_rating, COUNT(*) as review_count 
-         FROM reviews WHERE product_id = ?",
+             FROM reviews WHERE product_id = ?",
             [$product_id]
         )->fetch();
     }
 
-
-
-    // public function getProducts($limit = 10, $offset = 0)
-    // {
-    //     return $this->query(
-    //         "SELECT * FROM products LIMIT ? OFFSET ?",
-    //         [$limit, $offset]
-    //     )->fetchAll();
-    // }
-
-    // public function getTotalProductCount()
-    // {
-    //     return $this->query("SELECT COUNT(*) as count FROM products")->fetch()['count'];
-    // }
+    // دالة مساعدة (اختيارية)
+    public function countOf($tableName)
+    {
+        return $this->query("SELECT COUNT(*) AS 'total_$tableName' FROM $tableName")->fetch();
+    }
 }
+?>

@@ -16,26 +16,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['user_full_name'] = $user['first_name'] . " " . $user['last_name'];
                 $_SESSION['is_logged_in'] = true;
+                $_SESSION['user_role'] = $user['role']; // ← حفظ الدور في الجلسة
 
-                // 2. نقل سلة الجلسة (إن وُجدت) إلى قاعدة البيانات
+                // 2. نقل سلة الجلسة (إن وُجدت)
                 if (isset($_SESSION['guest_cart']) && !empty($_SESSION['guest_cart'])) {
-                    // جلب أو إنشاء سلة المستخدم
                     $cart = $db->getCartByUserId($user['id']);
                     if (!$cart) {
                         $cart_id = $db->createCart($user['id']);
                         $cart = ['id' => $cart_id];
                     }
-
-                    // إضافة كل عنصر من السيشن إلى قاعدة البيانات
                     foreach ($_SESSION['guest_cart'] as $item) {
                         $db->addToCart($cart['id'], $item['product_id'], $item['quantity']);
                     }
-
-                    // مسح سلة الجلسة
                     unset($_SESSION['guest_cart']);
                 }
 
-                // 3. توجيه المستخدم إلى صفحة الدفع (checkout.php) بعد النجاح
+                // 3. توجيه المستخدم حسب الدور
+                $redirect_url = '';
+                if ($user['role'] === 'admin') {
+                    $redirect_url = '../admin/index.php';
+                } else {
+                    // مستخدم عادي: تحقق إذا كان هناك تحويل مطلوب (مثل checkout)
+                    if (isset($_SESSION['redirect_after_login'])) {
+                        $redirect_url = '../karma-master/' . $_SESSION['redirect_after_login'];
+                        unset($_SESSION['redirect_after_login']);
+                    } else {
+                        $redirect_url = '../karma-master/index.php';
+                    }
+                }
+
                 echo "
                 <script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>
                 <script>
@@ -46,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             icon: 'success',
                             confirmButtonColor: '#ffba00'
                         }).then(() => {
-                            window.location.href = '../karma-master/checkout.php'; // ✅ التغيير هنا
+                            window.location.href = '" . $redirect_url . "';
                         });
                     };
                 </script>";
