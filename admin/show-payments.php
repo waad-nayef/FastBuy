@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<?php
+require_once "../config/db.php";
+$db = Database::getInstance();
+?>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>FastBuy | Payments</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#007bff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
+
+    <meta name="title" content="AdminLTE v4 | Dashboard" />
+    <meta name="author" content="ColorlibHQ" />
+    <meta name="description"
+        content="AdminLTE is a Free Bootstrap 5 Admin Dashboard, 30 example pages using Vanilla JS. Fully accessible with WCAG 2.1 AA compliance." />
+    <meta name="keywords"
+        content="bootstrap 5, bootstrap, bootstrap 5 admin dashboard, bootstrap 5 dashboard, bootstrap 5 charts, bootstrap 5 calendar, bootstrap 5 datepicker, bootstrap 5 tables, bootstrap 5 datatable, vanilla js datatable, colorlibhq, colorlibhq dashboard, colorlibhq admin dashboard, accessible admin panel, WCAG compliant" />
+
+    <meta name="supported-color-schemes" content="light dark" />
+    <link rel="preload" href="/FastBuy/admin/css/adminlte.css" as="style" />
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/source-sans-3@5.0.12/index.css"
+        integrity="sha256-tXJfXfp6Ewt1ilPzLDtQnJV4hclT9XuaZUKyUvmyr+Q=" crossorigin="anonymous" media="print"
+        onload="this.media = 'all'" />
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.11.0/styles/overlayscrollbars.min.css"
+        crossorigin="anonymous" />
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+        crossorigin="anonymous" />
+
+    <link rel="stylesheet" href="/FastBuy/admin/css/adminlte.css" />
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/apexcharts@3.37.1/dist/apexcharts.css"
+        integrity="sha256-4MX+61mt9NVvvuPjUWdUdyfZfxSB1/Rf9WtqRHgG5S0=" crossorigin="anonymous" />
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/css/jsvectormap.min.css"
+        integrity="sha256-+uGLJmmTKOqBr+2E6KDYs/NRsHxSkONXFHUL0fy2O/4=" crossorigin="anonymous" />
+
+    <script src="https://kit.fontawesome.com/8bb0a97d35.js" crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+    <div class="app-wrapper">
+        <?php
+        include "../admin-components/navbar.php";
+        include "../admin-components/sidebar.php";
+        ?>
+
+        <!--begin::App Main-->
+        <main class="app-main">
+            <!--begin::App Content Header-->
+            <div class="app-content-header">
+                <!--begin::Container-->
+                <div class="container-fluid">
+                    <!--begin::Row-->
+                    <div class="row">
+                        <div class="col-sm-6" style="width:100%">
+                            <div style="display: flex; justify-content:space-between; align-items: center;">
+                                <h3 class="mb-0">Payments Management</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <!--end::Row-->
+                </div>
+                <!--end::Container-->
+            </div>
+            <!--end::App Content Header-->
+
+            <!--begin::App Content-->
+            <div class="app-content">
+                <!--begin::Container-->
+                <div class="container-fluid">
+                    <div class="card mb-4">
+                        <div class="card-body p-0">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 10px">#</th>
+                                        <th>User Name</th>
+                                        <th>Status</th>
+                                        <th>Paid At</th>
+                                        <th>Amount</th>
+                                        <th>Provider</th>
+                                        <th>Order Id</th>
+                                        <th>Payment Method</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    $payments = $db->getAllPayments()->fetchAll();
+                                    foreach ($payments as $payment) {
+                                        $id = $payment['id'];
+                                        $user = $db->getUserById($payment['user_id']);
+                                        $userName = $user['first_name'] . ' ' . $user['last_name'];
+                                        $status = $payment['status'];
+                                        $paid_at = $payment['paid_at'] ?? 'N/A';
+                                        $amount = $payment['amount'];
+                                        $provider = $payment['provider'];
+                                        $orderId = $payment['order_id'];
+                                        $payment_method = $payment['payment_method'];
+
+                                        echo '<tr class="align-middle">';
+                                        echo "<td>$id</td>";
+                                        echo "<td>$userName</td>";
+                                        echo "<td>$status</td>";
+                                        echo "<td>$paid_at</td>";
+                                        echo "<td>$ $amount</td>";
+                                        echo "<td>$provider</td>";
+                                        echo "<td>$orderId</td>";
+                                        echo "<td>$payment_method</td>";
+                                        echo "
+                                                <td>
+                                                   <span class='badge text-bg-" . ($status === 'paid' ? "secondary" : "warning") . "' 
+                                                    " . ($status === 'paid' ? "style='pointer-events: none; opacity: 0.6; cursor: not-allowed;'" : "onclick='updateStatus($id)' style='cursor:pointer;'") . ">
+                                                    Update Status
+                                                </span>
+                                                </td>
+                                                ";
+                                        echo '</tr>';
+                                    }
+                                    ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- /.card-body -->
+                    </div>
+                    <!-- /.card -->
+                </div>
+                <!--end::Container-->
+            </div>
+            <!--end::App Content-->
+        </main>
+        <!--end::App Main-->
+        <?php include "../admin-components/footer.php"; ?>
+    </div>
+
+    <?php include "../admin-components/scripts.php"; ?>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+
+            if (urlParams.get('updated') === '1') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Updated',
+                    text: 'Payment status updated successfully',
+                    confirmButtonColor: '#28a745',
+                    timer: 3000
+                }).then(() => {
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                });
+            }
+
+            window.updateStatus = function(id) {
+                Swal.fire({
+                    title: 'Update Payment Status',
+                    input: 'select',
+                    inputOptions: {
+                        pending: 'Pending',
+                        paid: 'Paid',
+                        failed: 'Failed'
+                    },
+                    inputPlaceholder: 'Select a status',
+                    showCancelButton: true,
+                    confirmButtonText: 'Update',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#28a745',
+                    inputValidator: (value) => {
+                        if (!value) {
+                            return 'You must choose a status';
+                        }
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = '/FastBuy/admin/actions/payment/update-status.php?id=' + id + '&status=' + result.value;
+                    }
+                });
+            };
+        });
+    </script>
+</body>
+
+</html>
