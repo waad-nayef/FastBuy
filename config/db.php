@@ -1,28 +1,49 @@
 <?php
+
+$host = 'localhost';
+$user = 'root';
+$pass = '';
+$charset = 'utf8mb4';
+$dbName = 'ecommerce_db';
+
+try {
+    $bootstrapPdo = new PDO(
+        "mysql:host=$host;charset=$charset",
+        $user,
+        $pass,
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+    );
+
+    $checkDb = $bootstrapPdo->query("SHOW DATABASES LIKE '$dbName'");
+    if ($checkDb->rowCount() === 0) {
+
+        $sqlFile = __DIR__ . '/initialize.sql';
+
+        $sql = file_get_contents($sqlFile);
+        $bootstrapPdo->exec($sql);
+    }
+} catch (PDOException $e) {
+    die("Database initialization failed: " . $e->getMessage());
+}
+
 class Database
 {
     private static $instance = null;
     private $conn;
 
-    private $host = 'localhost';
-    private $db   = 'ecommerce_db';
-    private $user = 'root';
-    private $pass = '';
-    private $charset = 'utf8mb4';
-
     private function __construct()
     {
-        $dsn = "mysql:host=$this->host;dbname=$this->db;charset=$this->charset";
-        $options = [
-            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-        ];
+        $dsn = "mysql:host=localhost;dbname=ecommerce_db;charset=utf8mb4";
 
-        try {
-            $this->conn = new PDO($dsn, $this->user, $this->pass, $options);
-        } catch (PDOException $e) {
-            die("DB Connection failed: " . $e->getMessage());
-        }
+        $this->conn = new PDO(
+            $dsn,
+            'root',
+            '',
+            [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+            ]
+        );
     }
 
     public static function getInstance()
@@ -172,7 +193,7 @@ class Database
             $sql .= " AND stock > 0";
         }
 
-        $orderBy = "created_at DESC"; 
+        $orderBy = "created_at DESC";
         if (!empty($filters['sort'])) {
             switch ($filters['sort']) {
                 case 'price_low':
@@ -300,8 +321,10 @@ class Database
                 $product = $this->getProductById($item['product_id']);
                 $itemTotal = ((float)$product['price']) * $item['quantity'];
 
-                $this->query("INSERT INTO order_items (order_id, product_id, quantity, total_price) VALUES (?, ?, ?, ?)",
-                    [$order_id, $item['product_id'], $item['quantity'], $itemTotal]);
+                $this->query(
+                    "INSERT INTO order_items (order_id, product_id, quantity, total_price) VALUES (?, ?, ?, ?)",
+                    [$order_id, $item['product_id'], $item['quantity'], $itemTotal]
+                );
 
                 $this->query("UPDATE products SET stock = stock - ? WHERE id = ?", [$item['quantity'], $item['product_id']]);
             }
@@ -394,7 +417,8 @@ class Database
         return $this->conn->lastInsertId();
     }
 
-    public function getUserCarts($user_id) {
+    public function getUserCarts($user_id)
+    {
         return $this->query("SELECT * FROM cart WHERE user_id = ? ORDER BY id DESC", [$user_id])->fetchAll();
     }
 
@@ -413,7 +437,8 @@ class Database
         return $this->query("DELETE FROM cart_items WHERE cart_id = ?", [$cart_id]);
     }
 
-    public function getCartById($id) {
+    public function getCartById($id)
+    {
         return $this->query("SELECT * FROM cart WHERE id = ?", [$id])->fetch();
     }
 
@@ -436,7 +461,7 @@ class Database
         $total_price = ((float)$product['price']) * $quantity;
         $discount = (float)($product['discount'] ?? 0);
         $final_price = $discount > 0 ? $total_price - ($total_price * $discount / 100) : $total_price;
-        
+
         return $this->query(
             "INSERT INTO cart_items (cart_id, product_id, quantity, total_price)
              VALUES (?, ?, ?, ?)",
@@ -604,7 +629,7 @@ class Database
         $stmt = $this->conn->prepare("UPDATE users SET remember_token = ? WHERE id = ?");
         return $stmt->execute([$token, $userId]);
     }
-    
+
     public function getUserByToken($token)
     {
         $stmt = $this->conn->prepare("SELECT * FROM users WHERE remember_token = ?");
@@ -612,5 +637,3 @@ class Database
         return $stmt->fetch();
     }
 }
-
-?>

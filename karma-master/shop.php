@@ -66,27 +66,40 @@ if (isset($_SESSION['user_id'])) {
         }
         .single-product {
             margin-bottom: 50px;
-            min-height: 450px !important;
+            min-height: 380px !important;
             display: flex !important;
             flex-direction: column !important;
+            background: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        .single-product:hover {
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
         }
         .single-product img {
             margin-bottom: 20px;
             width: 100%;
-            height: 250px !important;
-            object-fit: cover !important;
+            height: 200px !important;
+            object-fit: contain !important;
+            background: #fbfbfb;
         }
         .single-product .product-details {
             flex: 1 !important;
             display: flex !important;
             flex-direction: column !important;
+            text-align: center;
         }
         .single-product .product-details h6 {
             min-height: 40px;
+            margin-bottom: 10px;
         }
         .single-product .product-details .prd-bottom {
             margin-top: auto !important;
-            padding-top: 20px;
+            padding-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
         }
     </style>
 </head>
